@@ -53,6 +53,7 @@ Test-Package 'buildwright' 'Buildwright.dll' 'Client' @{
     'Buildwright.dll' = 'bin/Release/Mods/buildwright/Buildwright.dll'
     'modinfo.json' = 'modinfo.json'
     'COPYRIGHT.md' = 'COPYRIGHT.md'
+    'LICENSE' = 'LICENSE'
     'LICENSE-Fieldwright.txt' = 'LICENSE-Fieldwright.txt'
     'assets/buildwright/lang/en.json' = 'assets/buildwright/lang/en.json'
     'assets/buildwright/lang/zh-cn.json' = 'assets/buildwright/lang/zh-cn.json'
@@ -61,4 +62,5 @@ Test-Package 'buildwrightserver' 'BuildwrightServer.dll' 'Server' @{
     'BuildwrightServer.dll' = 'bin/Release/Mods/buildwrightserver/BuildwrightServer.dll'
     'modinfo.json' = 'BuildwrightServer/modinfo.json'
     'COPYRIGHT.md' = 'BuildwrightServer/COPYRIGHT.md'
+    'LICENSE' = 'LICENSE'
 }

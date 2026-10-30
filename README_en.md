@@ -74,4 +74,4 @@ Buildwright original source code is released under the MIT License, copyright VS
 
 Vintage Story, VSImGui, ImGui.NET, OpenTK, SkiaSharp, Cairo, and protobuf-net remain under their respective owners' licenses. This project does not relicense those dependencies. Blueprints, player creations, model geometry, and textures remain the property of their respective owners; exporting a format does not grant permission to redistribute or commercially use third-party assets.
 
-See `COPYRIGHT.md`, `BuildwrightServer/COPYRIGHT.md`, and `THIRD-PARTY-NOTICES.md` for the complete notices.
+See `LICENSE`, `COPYRIGHT.md`, `BuildwrightServer/COPYRIGHT.md`, and `THIRD-PARTY-NOTICES.md` for the complete notices.

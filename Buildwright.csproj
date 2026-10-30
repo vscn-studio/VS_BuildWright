@@ -31,6 +31,7 @@
     <Reference Include="protobuf-net" HintPath="$(VintageStoryPath)\Lib\protobuf-net.dll" Private="false" />
     <None Include="modinfo.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="COPYRIGHT.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="LICENSE" CopyToOutputDirectory="PreserveNewest" />
     <None Include="LICENSE-Fieldwright.txt" CopyToOutputDirectory="PreserveNewest" />
     <None Include="assets\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
@@ -55,7 +56,7 @@
     </PropertyGroup>
     <RemoveDir Directories="$(ReleaseStage)" />
     <ItemGroup>
-      <ReleaseRootFile Include="$(TargetPath);$(MSBuildProjectDirectory)\modinfo.json;$(MSBuildProjectDirectory)\COPYRIGHT.md;$(MSBuildProjectDirectory)\LICENSE-Fieldwright.txt" />
+      <ReleaseRootFile Include="$(TargetPath);$(MSBuildProjectDirectory)\modinfo.json;$(MSBuildProjectDirectory)\COPYRIGHT.md;$(MSBuildProjectDirectory)\LICENSE;$(MSBuildProjectDirectory)\LICENSE-Fieldwright.txt" />
       <ReleaseAsset Include="$(MSBuildProjectDirectory)\assets\**\*" />
     </ItemGroup>
     <MakeDir Directories="artifacts" />

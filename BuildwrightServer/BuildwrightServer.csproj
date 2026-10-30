@@ -21,6 +21,7 @@
     <Compile Include="..\Shared\WorldOperationProtocol.cs" Link="Shared\WorldOperationProtocol.cs" />
     <None Include="modinfo.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="COPYRIGHT.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\LICENSE" Link="LICENSE" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <Target Name="ValidateVintageStoryPath" BeforeTargets="BeforeBuild">
     <Error Condition="'$(VintageStoryPath)' == '' or !Exists('$(VintageStoryPath)\VintagestoryAPI.dll')"
@@ -33,7 +34,7 @@
     </PropertyGroup>
     <RemoveDir Directories="$(ReleaseStage)" />
     <ItemGroup>
-      <ReleaseFile Include="$(TargetPath);$(MSBuildProjectDirectory)\modinfo.json;$(MSBuildProjectDirectory)\COPYRIGHT.md" />
+      <ReleaseFile Include="$(TargetPath);$(MSBuildProjectDirectory)\modinfo.json;$(MSBuildProjectDirectory)\COPYRIGHT.md;$(MSBuildProjectDirectory)\..\LICENSE" />
     </ItemGroup>
     <MakeDir Directories="..\artifacts" />
     <Copy SourceFiles="@(ReleaseFile)" DestinationFolder="$(ReleaseStage)" />

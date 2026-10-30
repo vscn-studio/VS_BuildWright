@@ -74,4 +74,4 @@ Buildwright 自有源代码按照 MIT License 发布，版权归 VSCN-Studio 所
 
 Vintage Story、VSImGui、ImGui.NET、OpenTK、SkiaSharp、Cairo 和 protobuf-net 由各自权利人按照其许可证提供，项目不重新授权这些依赖。蓝图、玩家作品、模型几何和贴图的权利仍归各自权利人；导出格式不会自动授予第三方素材的再分发或商业使用权。
 
-完整版权文本见 `COPYRIGHT.md`、`BuildwrightServer/COPYRIGHT.md` 和 `THIRD-PARTY-NOTICES.md`。
+完整版权文本见 `LICENSE`、`COPYRIGHT.md`、`BuildwrightServer/COPYRIGHT.md` 和 `THIRD-PARTY-NOTICES.md`。

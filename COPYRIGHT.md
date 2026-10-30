@@ -4,6 +4,7 @@ Copyright (c) 2026 VSCN-Studio.
 
 Unless a file or dependency carries a separate notice, the original Buildwright
 source code and bundled Buildwright resources are released under the MIT License.
+The complete VSCN-Studio MIT text is provided in `LICENSE`.
 
 ## Fieldwright attribution
 
