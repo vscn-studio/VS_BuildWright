@@ -1,0 +1,66 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath>bin\$(Configuration)\Mods\buildwright</OutputPath>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ImGuiDirectory Condition="'$(ImGuiDirectory)' == ''">$(MSBuildProjectDirectory)\..\vsimgui_1.2.7</ImGuiDirectory>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>Buildwright</RootNamespace>
+    <AssemblyName>Buildwright</AssemblyName>
+    <ModVersion>1.0.3</ModVersion>
+    <Version>$(ModVersion)</Version>
+    <PackagePath>artifacts\buildwright-$(ModVersion).zip</PackagePath>
+    <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
+    <VintageStoryPath Condition="'$(VintageStoryPath)' == '' and '$(VINTAGE_STORY)' != ''">$(VINTAGE_STORY)</VintageStoryPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="VSImGui" HintPath="$(ImGuiDirectory)\VSImGui.dll" Private="false" />
+    <Reference Include="ImGui.NET" HintPath="$(ImGuiDirectory)\ImGui.NET.dll" Private="false" />
+    <Reference Include="VintagestoryAPI" HintPath="$(VintageStoryPath)\VintagestoryAPI.dll" Private="false" />
+    <Reference Include="VintagestoryLib" HintPath="$(VintageStoryPath)\VintagestoryLib.dll" Private="false" />
+    <Reference Include="VSSurvivalMod" HintPath="$(VintageStoryPath)\Mods\VSSurvivalMod.dll" Private="false" />
+    <Reference Include="Newtonsoft.Json" HintPath="$(VintageStoryPath)\Lib\Newtonsoft.Json.dll" Private="false" />
+    <Reference Include="cairo-sharp" HintPath="$(VintageStoryPath)\Lib\cairo-sharp.dll" Private="false" />
+    <Reference Include="OpenTK.Graphics" HintPath="$(VintageStoryPath)\Lib\OpenTK.Graphics.dll" Private="false" />
+    <Reference Include="OpenTK.Core" HintPath="$(VintageStoryPath)\Lib\OpenTK.Core.dll" Private="false" />
+    <Reference Include="SkiaSharp" HintPath="$(VintageStoryPath)\Lib\SkiaSharp.dll" Private="false" />
+    <Reference Include="protobuf-net" HintPath="$(VintageStoryPath)\Lib\protobuf-net.dll" Private="false" />
+    <None Include="modinfo.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="COPYRIGHT.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="LICENSE-Fieldwright.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="assets\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="tests\**\*.cs" />
+    <Compile Remove="BuildwrightServer\**\*.cs" />
+    <Compile Remove="artifacts\**\*.cs" />
+    <None Include="tests\**\*" />
+  </ItemGroup>
+
+  <Target Name="ValidateVintageStoryPath" BeforeTargets="BeforeBuild">
+    <Error Condition="'$(VintageStoryPath)' == '' or !Exists('$(VintageStoryPath)\VintagestoryAPI.dll')"
+      Text="Set VINTAGE_STORY or pass /p:VintageStoryPath to a Vintage Story installation." />
+    <Error Condition="!Exists('$(ImGuiDirectory)\VSImGui.dll') or !Exists('$(ImGuiDirectory)\ImGui.NET.dll')" Text="Set ImGuiDirectory to the vsimgui 1.2.7 mod directory." />
+  </Target>
+
+  <Target Name="PackageBuildwright" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
+    <Delete Files="$(OutputPath)\Buildwright.pdb" />
+    <PropertyGroup>
+      <ReleaseStage>$(MSBuildProjectDirectory)\artifacts\staging\buildwright</ReleaseStage>
+    </PropertyGroup>
+    <RemoveDir Directories="$(ReleaseStage)" />
+    <ItemGroup>
+      <ReleaseRootFile Include="$(TargetPath);$(MSBuildProjectDirectory)\modinfo.json;$(MSBuildProjectDirectory)\COPYRIGHT.md;$(MSBuildProjectDirectory)\LICENSE-Fieldwright.txt" />
+      <ReleaseAsset Include="$(MSBuildProjectDirectory)\assets\**\*" />
+    </ItemGroup>
+    <MakeDir Directories="artifacts" />
+    <Copy SourceFiles="@(ReleaseRootFile)" DestinationFolder="$(ReleaseStage)" />
+    <Copy SourceFiles="@(ReleaseAsset)" DestinationFiles="@(ReleaseAsset->'$(ReleaseStage)\assets\%(RecursiveDir)%(Filename)%(Extension)')" />
+    <ZipDirectory SourceDirectory="$(ReleaseStage)" DestinationFile="$(PackagePath)" Overwrite="true" />
+  </Target>
+</Project>

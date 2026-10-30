@@ -1,0 +1,50 @@
+# .NET build output
+bin/
+obj/
+TestResults/
+coverage/
+
+# NuGet and local package output
+*.nupkg
+*.snupkg
+packages/
+
+# Packaged mod artifacts
+artifacts/
+
+# Local documentation drafts and publishing fragments
+docs/
+
+# Web and JavaScript build output (if a local site is checked out)
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+
+# Local test output
+tests/bin/
+tests/obj/
+
+# IDE and editor files
+.vs/
+.idea/
+*.user
+*.suo
+
+# Local logs and temporary files
+*.log
+*.tmp
+*.bak
+*.bak.json
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+data/
+
+# OS and editor metadata
+.DS_Store
+Thumbs.db
+*.swp
+*.swo

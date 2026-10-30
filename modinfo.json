@@ -1,0 +1,17 @@
+{
+  "type": "code",
+  "modid": "buildwright",
+  "name": "Buildwright",
+  "authors": [
+    "VSCN-Studio"
+  ],
+  "description": "Client-side blueprints, ghost projections and build progress tools.",
+  "version": "1.0.3",
+  "side": "Client",
+  "requiredOnClient": true,
+  "requiredOnServer": false,
+  "dependencies": {
+    "game": "1.22.3",
+    "vsimgui": "1.2.7"
+  }
+}

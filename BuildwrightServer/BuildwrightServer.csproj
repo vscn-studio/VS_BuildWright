@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath>..\bin\$(Configuration)\Mods\buildwrightserver</OutputPath>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>BuildwrightServer</AssemblyName>
+    <ModVersion>1.0.3</ModVersion>
+    <Version>$(ModVersion)</Version>
+    <PackagePath>..\artifacts\buildwrightserver-$(ModVersion).zip</PackagePath>
+    <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
+    <VintageStoryPath Condition="'$(VintageStoryPath)' == '' and '$(VINTAGE_STORY)' != ''">$(VINTAGE_STORY)</VintageStoryPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="VintagestoryAPI" HintPath="$(VintageStoryPath)\VintagestoryAPI.dll" Private="false" />
+    <Reference Include="VintagestoryLib" HintPath="$(VintageStoryPath)\VintagestoryLib.dll" Private="false" />
+    <Reference Include="VSSurvivalMod" HintPath="$(VintageStoryPath)\Mods\VSSurvivalMod.dll" Private="false" />
+    <Reference Include="protobuf-net" HintPath="$(VintageStoryPath)\Lib\protobuf-net.dll" Private="false" />
+    <Compile Include="..\Shared\WorldOperationProtocol.cs" Link="Shared\WorldOperationProtocol.cs" />
+    <None Include="modinfo.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="COPYRIGHT.md" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <Target Name="ValidateVintageStoryPath" BeforeTargets="BeforeBuild">
+    <Error Condition="'$(VintageStoryPath)' == '' or !Exists('$(VintageStoryPath)\VintagestoryAPI.dll')"
+      Text="Set VINTAGE_STORY or pass /p:VintageStoryPath to a Vintage Story installation." />
+  </Target>
+  <Target Name="PackageBuildwrightServer" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
+    <Delete Files="$(OutputPath)\BuildwrightServer.pdb" />
+    <PropertyGroup>
+      <ReleaseStage>$(MSBuildProjectDirectory)\..\artifacts\staging\buildwrightserver</ReleaseStage>
+    </PropertyGroup>
+    <RemoveDir Directories="$(ReleaseStage)" />
+    <ItemGroup>
+      <ReleaseFile Include="$(TargetPath);$(MSBuildProjectDirectory)\modinfo.json;$(MSBuildProjectDirectory)\COPYRIGHT.md" />
+    </ItemGroup>
+    <MakeDir Directories="..\artifacts" />
+    <Copy SourceFiles="@(ReleaseFile)" DestinationFolder="$(ReleaseStage)" />
+    <ZipDirectory SourceDirectory="$(ReleaseStage)" DestinationFile="$(PackagePath)" Overwrite="true" />
+  </Target>
+</Project>

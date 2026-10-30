@@ -1,0 +1,16 @@
+{
+  "type": "code",
+  "modid": "buildwrightserver",
+  "name": "Buildwright Server",
+  "authors": [
+    "VSCN-Studio"
+  ],
+  "description": "Authoritative server-side world operations for Buildwright.",
+  "version": "1.0.3",
+  "side": "Server",
+  "requiredOnClient": false,
+  "requiredOnServer": true,
+  "dependencies": {
+    "game": "1.22.3"
+  }
+}
