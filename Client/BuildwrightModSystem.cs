@@ -83,7 +83,7 @@ public sealed class BuildwrightModSystem : ModSystem
         selectionRenderer = new BuildwrightSelectionRenderer(api);
         if (ShouldShowControlHud()) controlHud.TryOpen();
         controlHudTickListener = api.Event.RegisterGameTickListener(OnControlHudTick, 100);
-        api.Logger.Notification("[buildwright] Buildwright 1.0.3 ready (client)");
+        api.Logger.Notification("[buildwright] Buildwright 1.0.4-pre.1 ready (client)");
     }
 
     private void OnControlHudTick(float dt)

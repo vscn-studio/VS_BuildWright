@@ -35,7 +35,7 @@ public sealed class BuildwrightServerModSystem : ModSystem
             .SetMessageHandler<WorldOperationRequest>(OnWorldOperation)
             .SetMessageHandler<ServerCapabilityRequest>(OnCapabilityRequest)
             .SetMessageHandler<ExactSupportBeamPlacementRequest>(OnExactSupportBeamPlacement);
-        api.Logger.Notification("[buildwrightserver] Buildwright Server 1.0.3 ready");
+        api.Logger.Notification("[buildwrightserver] Buildwright Server 1.0.4-pre.1 ready");
     }
 
     private void OnCapabilityRequest(IServerPlayer player, ServerCapabilityRequest request)

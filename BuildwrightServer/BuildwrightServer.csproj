@@ -7,7 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <AssemblyName>BuildwrightServer</AssemblyName>
-    <ModVersion>1.0.3</ModVersion>
+    <ModVersion>1.0.4-pre.1</ModVersion>
     <Version>$(ModVersion)</Version>
     <PackagePath>..\artifacts\buildwrightserver-$(ModVersion).zip</PackagePath>
     <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>

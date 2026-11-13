@@ -6,7 +6,7 @@
     "VSCN-Studio"
   ],
   "description": "Client-side blueprints, ghost projections and build progress tools.",
-  "version": "1.0.3",
+  "version": "1.0.4-pre.1",
   "side": "Client",
   "requiredOnClient": true,
   "requiredOnServer": false,

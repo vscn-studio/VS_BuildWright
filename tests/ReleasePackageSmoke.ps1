@@ -1,4 +1,4 @@
-param([string]$Version = '1.0.3')
+param([string]$Version = '1.0.4-pre.1')
 
 $ErrorActionPreference = 'Stop'
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
@@ -33,7 +33,8 @@ function Test-Package([string]$modid, [string]$assembly, [string]$side, [hashtab
         Assert-Check ($manifest.modid -ceq $modid -and $manifest.version -ceq $Version -and $manifest.side -ceq $side) "$modid has incorrect identity/version/side"
         $assemblyPath = Join-Path $projectRoot $files[$assembly]
         $assemblyVersion = [Reflection.AssemblyName]::GetAssemblyName($assemblyPath).Version.ToString()
-        Assert-Check ($assemblyVersion -ceq "$Version.0") "$modid assembly version is $assemblyVersion"
+        $expectedAssemblyVersion = ($Version -split '-', 2)[0] + '.0'
+        Assert-Check ($assemblyVersion -ceq $expectedAssemblyVersion) "$modid assembly version is $assemblyVersion"
         if ($side -eq 'Client') {
             Assert-Check ($manifest.dependencies.vsimgui -ceq '1.2.7') 'Client must require VSImGui 1.2.7'
             $en = Read-ZipText $zip 'assets/buildwright/lang/en.json' | ConvertFrom-Json -AsHashtable

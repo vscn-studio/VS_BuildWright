@@ -169,16 +169,10 @@ internal static class BlockEntityCapture
             if (string.IsNullOrWhiteSpace(block.EntityClass) || string.IsNullOrWhiteSpace(ascii85)) return null;
             var tree = Decode(ascii85);
             if (tree == null) return null;
-            // Chest variants encode their cardinal direction in the block code.
-            // A temporary GenericTypedContainer only builds its neutral cached mesh,
-            // so using it here loses that direction even though the block comparison
-            // remains correct. The normal block mesh already contains the variant;
-            // meshAngle is the entity-only fine rotation applied by vanilla later.
-            if (UsesBlockOrientedMesh(block))
-            {
-                var orientedMesh = BuildTessellatedMesh(capi, block, tree);
-                if (orientedMesh != null) return orientedMesh;
-            }
+            var containerMesh = TryBuildContainerMesh(capi, block, tree);
+            if (containerMesh != null) return containerMesh;
+            var trapdoorMesh = TryBuildTrapdoorMesh(capi, block, tree);
+            if (trapdoorMesh != null) return trapdoorMesh;
 
             var shapeMesh = TryBuildShapeAttributeMesh(capi, block, tree);
             if (shapeMesh != null) return shapeMesh;
@@ -205,7 +199,7 @@ internal static class BlockEntityCapture
             var supportBeamMesh = TryBuildSupportBeamMesh(entity);
             if (supportBeamMesh != null) return supportBeamMesh;
             var direct = TryBuildEntityMesh(capi, entity);
-            if (direct != null) return direct.Clone();
+            if (direct != null) return direct;
             var mesh = FindMesh(entity);
             return mesh?.VerticesCount > 0 ? mesh.Clone() : null;
         }
@@ -250,12 +244,20 @@ internal static class BlockEntityCapture
         if (!string.Equals(block.Code?.Domain, "vsroofing", StringComparison.OrdinalIgnoreCase)
             && !string.Equals(entity.GetType().Name, "AutoRoofEntity", StringComparison.Ordinal)) return null;
 
+        // 2.x moved generation from the entity to RoofData and made the
+        // generators public. Keep the entity fallback for earlier releases.
+        var source = entity.GetType().GetProperty("RoofData")?.GetValue(entity) ?? entity;
+        return BuildDynamicCompositeMesh(source, capi.Tesselator);
+    }
+
+    private static MeshData? BuildDynamicCompositeMesh(object source, ITesselatorAPI tesselator)
+    {
         MeshData? combined = null;
         foreach (var methodName in new[] { "GenerateRoofMesh", "GenerateFenceConnectMesh", "GeneratePlantMesh" })
         {
-            var method = entity.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic,
+            var method = source.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
                 binder: null, types: new[] { typeof(ITesselatorAPI) }, modifiers: null);
-            if (method?.Invoke(entity, new object[] { capi.Tesselator }) is not MeshData { VerticesCount: > 0 } part)
+            if (method?.Invoke(source, new object[] { tesselator }) is not MeshData { VerticesCount: > 0 } part)
                 continue;
 
             if (combined == null) combined = part.Clone();
@@ -324,28 +326,63 @@ internal static class BlockEntityCapture
         _ => 0
     };
 
-    private static bool UsesBlockOrientedMesh(Block block)
+    private static MeshData? TryBuildContainerMesh(ICoreClientAPI capi, Block block, ITreeAttribute tree)
     {
-        var path = block.Code?.Path;
-        return path != null && (path.StartsWith("chest", StringComparison.OrdinalIgnoreCase)
-            || path.StartsWith("labeledchest", StringComparison.OrdinalIgnoreCase)
-            || path.StartsWith("trunk-", StringComparison.OrdinalIgnoreCase));
+        if (block is not BlockGenericTypedContainer container) return null;
+        var type = tree.GetString("type", block.Attributes?["defaultType"].AsString("normal-generic"));
+        var shape = block.Attributes?["shape"][type].AsString(null);
+        if (shape == null) return null;
+
+        // Vanilla terrain generation uses a neutral shape and then applies the
+        // full saved meshAngle, including cardinal and 22.5 degree rotations.
+        // TesselateBlock uses the default type and may already rotate the shape.
+        var mesh = container.GenMesh(capi, type, shape, capi.Tesselator, new Vec3f());
+        return mesh?.VerticesCount > 0 ? mesh.Rotate(BlockCenter, 0, tree.GetFloat("meshAngle"), 0) : null;
     }
 
-    private static MeshData? BuildTessellatedMesh(ICoreClientAPI capi, Block block, ITreeAttribute tree)
+    private static MeshData? TryBuildTrapdoorMesh(ICoreClientAPI capi, Block block, ITreeAttribute tree)
     {
-        try
+        if (block.GetBehavior<BlockBehaviorTrapDoor>() == null || block.Shape?.Base == null) return null;
+        var shape = Shape.TryGet(capi, block.Shape.Base.Clone().WithPathPrefixOnce("shapes/").WithPathAppendixOnce(".json"));
+        if (shape == null) return null;
+        shape = BuildTrapdoorShape(shape, tree.GetBool("opened"));
+        // Use this block's texture source, including its wood/metal variant and
+        // blended overlays, rather than an animation cache shared by style.
+        capi.Tesselator.TesselateShape(block, shape, out var mesh,
+            new Vec3f(block.Shape.rotateX, block.Shape.rotateY, block.Shape.rotateZ));
+        return mesh?.VerticesCount > 0 ? mesh.MatrixTransform(TrapdoorTransform(tree).Values) : null;
+    }
+
+    private static Shape BuildTrapdoorShape(Shape source, bool opened)
+    {
+        var shape = source.Clone();
+        if (!opened) return shape;
+        // Vanilla trapdoors define a single held pose for the opened animation.
+        // Bake it into a private shape so previews need no live animator.
+        var frame = shape.Animations?.FirstOrDefault(animation => animation.Code == "opened")?.KeyFrames?.FirstOrDefault();
+        if (frame?.Elements == null) return shape;
+        foreach (var (name, pose) in frame.Elements)
         {
-            capi.Tesselator.TesselateBlock(block, out var mesh);
-            if (mesh == null || mesh.VerticesCount == 0) return null;
-            var angle = tree.GetFloat("meshAngle");
-            if (angle != 0) mesh.Rotate(BlockCenter, 0, angle, 0);
-            return mesh;
+            var element = shape.GetElementByName(name);
+            if (element == null) continue;
+            element.RotationX += pose.RotationX ?? 0;
+            element.RotationY += pose.RotationY ?? 0;
+            element.RotationZ += pose.RotationZ ?? 0;
         }
-        catch
-        {
-            return null;
-        }
+        return shape;
+    }
+
+    private static Matrixf TrapdoorTransform(ITreeAttribute tree)
+    {
+        var attachedFace = tree.GetInt("attachedFace");
+        var facing = BlockFacing.ALLFACES[Math.Clamp(attachedFace, 0, BlockFacing.ALLFACES.Length - 1)];
+        var rotation = tree.GetInt("rotDeg");
+        var matrix = new Matrixf().Translate(0.5f, 0.5f, 0.5f);
+        if (facing.IsVertical)
+            matrix.RotateYDeg(rotation).RotateZDeg(facing.Negative ? 180 : 0);
+        else
+            matrix.RotateYDeg(facing.HorizontalAngleIndex * 90 + 90).RotateZDeg(rotation);
+        return matrix.Translate(-0.5f, -0.5f, -0.5f);
     }
 
     private static BlockEntity CreateBlockEntity(ICoreClientAPI capi, string fallbackClass, string? capturedClass)
@@ -456,19 +493,19 @@ internal static class BlockEntityCapture
             var parameterless = type.GetMethod("GenMesh", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
                 binder: null, types: Type.EmptyTypes, modifiers: null);
             if (parameterless?.Invoke(entity, null) is MeshData direct && direct.VerticesCount > 0)
-                return ApplyEntityRenderTransform(entity, direct);
+                return ApplyEntityRenderTransform(entity, direct.Clone());
 
             var withTesselator = type.GetMethod("GenMesh", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
                 binder: null, types: new[] { typeof(ITesselatorAPI) }, modifiers: null);
             if (withTesselator?.Invoke(entity, new object[] { capi.Tesselator }) is MeshData generated && generated.VerticesCount > 0)
-                return ApplyEntityRenderTransform(entity, generated);
+                return ApplyEntityRenderTransform(entity, generated.Clone());
 
             var cacheBuilder = type.GetMethod("loadOrCreateMesh", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
                 binder: null, types: Type.EmptyTypes, modifiers: null);
             if (cacheBuilder == null) continue;
             cacheBuilder.Invoke(entity, null);
             var cached = FindMesh(entity);
-            if (cached?.VerticesCount > 0) return cached;
+            if (cached?.VerticesCount > 0) return ApplyEntityRenderTransform(entity, cached.Clone());
         }
         return null;
     }

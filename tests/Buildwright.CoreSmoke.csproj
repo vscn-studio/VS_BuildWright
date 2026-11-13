@@ -10,6 +10,7 @@
     <ProjectReference Include="..\Buildwright.csproj" />
     <Reference Include="Newtonsoft.Json" HintPath="$(VINTAGE_STORY)\Lib\Newtonsoft.Json.dll" Private="true" />
     <Reference Include="VintagestoryAPI" HintPath="$(VINTAGE_STORY)\VintagestoryAPI.dll" Private="true" />
+    <Reference Include="SkiaSharp" HintPath="$(VINTAGE_STORY)\Lib\SkiaSharp.dll" Private="true" />
     <Reference Include="VintagestoryLib" HintPath="$(VINTAGE_STORY)\VintagestoryLib.dll" Private="true" />
     <Reference Include="OpenTK.Windowing.Common" HintPath="$(VINTAGE_STORY)\Lib\OpenTK.Windowing.Common.dll" Private="true" />
     <Reference Include="OpenTK.Mathematics" HintPath="$(VINTAGE_STORY)\Lib\OpenTK.Mathematics.dll" Private="true" />

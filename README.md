@@ -2,7 +2,7 @@
 
 Buildwright 是面向 Vintage Story 1.22.3 的蓝图、投影和建造进度模组。客户端提供蓝图管理、投影和模型导出，服务端组件负责需要服务器权限的世界操作。
 
-当前开源版本：`1.0.3`
+当前开源版本：`1.0.4-pre.1`
 
 ## 功能
 
@@ -11,6 +11,7 @@ Buildwright 是面向 Vintage Story 1.22.3 的蓝图、投影和建造进度模�
 - Ghost 投影支持移动、自动朝向、锁定、旋转、镜像、分层、裁剪、透明度和相对玩家移动。
 - Full、Missing、Wrong、Difference 投影模式，以及 Loose、Medium、Strict 匹配。
 - BlockEntity 和 Chisel 差异检测、错误高亮、材料需求和建造进度 HUD。
+- 投影兼容 VS Roofing 2.1.1 动态屋顶，保留原版活板门的材质、开合状态和安装方向，以及箱子的类型和完整旋转角度。
 - Creative 单人模式下的确认式批量放置、补建、清除、复制、移动、旋转、镜像和填充。
 - 导入和导出原生 Vintage Story JSON，并导出物品 Shape、Blockbench、Blender GLB 和 3D 打印 STL。
 - Blockbench 导出保留 Chisel 几何、材质引用和 UV；非正方形凿刻面会同步处理纹理旋转与 UV 选区，避免 90 度旋转导致拉伸。
@@ -20,8 +21,8 @@ Buildwright 是面向 Vintage Story 1.22.3 的蓝图、投影和建造进度模�
 
 客户端需要单独安装 VSImGui `1.2.7`。Release 构建会生成：
 
-- `artifacts/buildwright-1.0.3.zip`：放入客户端 `Mods` 目录。
-- `artifacts/buildwrightserver-1.0.3.zip`：放入服务器 `Mods` 目录；单人游戏也需要服务端组件。
+- `artifacts/buildwright-1.0.4-pre.1.zip`：放入客户端 `Mods` 目录。
+- `artifacts/buildwrightserver-1.0.4-pre.1.zip`：放入服务器 `Mods` 目录；单人游戏也需要服务端组件。
 
 不要把两个 ZIP 解压到同一个目录，也不要同时保留同一 modid 的旧包。
 
@@ -43,7 +44,7 @@ dotnet build -c Release --no-restore `
 dotnet build BuildwrightServer/BuildwrightServer.csproj -c Release --no-restore `
   -p:VINTAGE_STORY=$env:VINTAGE_STORY
 
-pwsh -NoProfile -File tests/ReleasePackageSmoke.ps1 -Version 1.0.3
+pwsh -NoProfile -File tests/ReleasePackageSmoke.ps1 -Version 1.0.4-pre.1
 ```
 
 Blockbench 插件兼容性检查需要本地 Vintage Story Blockbench 插件：

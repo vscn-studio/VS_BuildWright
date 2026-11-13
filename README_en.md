@@ -2,7 +2,7 @@
 
 Buildwright is a blueprint, projection, and build-progress mod for Vintage Story 1.22.3. The client manages blueprints, projections, and model exports; the companion server component performs world operations that require server authority.
 
-Current open-source version: `1.0.3`
+Current open-source version: `1.0.4-pre.1`
 
 ## Features
 
@@ -11,6 +11,7 @@ Current open-source version: `1.0.3`
 - Ghost projection with movement, auto-facing, locking, rotation, mirroring, layers, clipping, opacity, and player-relative movement.
 - Full, Missing, Wrong, and Difference display modes with Loose, Medium, and Strict matching.
 - BlockEntity and Chisel diff checks, wrong-cell highlighting, material requirements, and build-progress HUDs.
+- Ghost meshes support VS Roofing 2.1.1 dynamic roofs, vanilla trapdoor materials, open/closed states and mounting orientations, and container types with full saved rotation angles.
 - Confirmed batch placement, rebuild, clear, clone, move, rotate, mirror, and fill operations in single-player Creative mode.
 - Native Vintage Story JSON import/export plus Item Shape, Blockbench, Blender GLB, and 3D-print STL exports.
 - Blockbench exports preserve Chisel geometry, texture references, and UVs. Non-square chisel faces rotate the selected UV rectangle with the texture to prevent 90-degree stretching.
@@ -20,8 +21,8 @@ Current open-source version: `1.0.3`
 
 The client requires VSImGui `1.2.7` as a separate mod. A Release build produces:
 
-- `artifacts/buildwright-1.0.3.zip` for the client `Mods` directory.
-- `artifacts/buildwrightserver-1.0.3.zip` for the server `Mods` directory. The server package is also required in single-player.
+- `artifacts/buildwright-1.0.4-pre.1.zip` for the client `Mods` directory.
+- `artifacts/buildwrightserver-1.0.4-pre.1.zip` for the server `Mods` directory. The server package is also required in single-player.
 
 Do not extract both ZIPs into one directory, and remove older packages with the same mod id before installing an update.
 
@@ -43,7 +44,7 @@ dotnet build -c Release --no-restore `
 dotnet build BuildwrightServer/BuildwrightServer.csproj -c Release --no-restore `
   -p:VINTAGE_STORY=$env:VINTAGE_STORY
 
-pwsh -NoProfile -File tests/ReleasePackageSmoke.ps1 -Version 1.0.3
+pwsh -NoProfile -File tests/ReleasePackageSmoke.ps1 -Version 1.0.4-pre.1
 ```
 
 The Blockbench plugin compatibility check uses a local Vintage Story Blockbench plugin:
