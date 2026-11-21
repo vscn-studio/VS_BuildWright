@@ -35,7 +35,7 @@ public sealed class BuildwrightServerModSystem : ModSystem
             .SetMessageHandler<WorldOperationRequest>(OnWorldOperation)
             .SetMessageHandler<ServerCapabilityRequest>(OnCapabilityRequest)
             .SetMessageHandler<ExactSupportBeamPlacementRequest>(OnExactSupportBeamPlacement);
-        api.Logger.Notification("[buildwrightserver] Buildwright Server 1.0.4-pre.1 ready");
+        api.Logger.Notification("[buildwrightserver] Buildwright Server 1.0.4 ready");
     }
 
     private void OnCapabilityRequest(IServerPlayer player, ServerCapabilityRequest request)
@@ -442,59 +442,8 @@ public sealed class BuildwrightServerModSystem : ModSystem
         return (host.X + rx, host.InternalY + y, host.Z + rz);
     }
 
-    private static void TransformExactBeamTree(ITreeAttribute tree, WorldOperationRequest request)
-    {
-        var bytes = tree.GetBytes("beams");
-        if (bytes == null || bytes.Length == 0) return;
-        var beams = SerializerUtil.Deserialize<PlacedBeam[]>(bytes) ?? Array.Empty<PlacedBeam>();
-        foreach (var beam in beams)
-        {
-            if (beam?.Start == null || beam.End == null) continue;
-            beam.Start = TransformLocalPoint(beam.Start, request);
-            beam.End = TransformLocalPoint(beam.End, request);
-            beam.FacingIndex = TransformFacingIndex(beam.FacingIndex, request);
-        }
-        tree.SetBytes("beams", SerializerUtil.Serialize(beams));
-    }
-
-    private static Vec3f TransformLocalPoint(Vec3f point, WorldOperationRequest request)
-    {
-        var x = point.X;
-        var y = point.Y;
-        var z = point.Z;
-        if (request.MirrorAxis == 1) x = 1f - x;
-        else if (request.MirrorAxis == 2) y = 1f - y;
-        else if (request.MirrorAxis == 3) z = 1f - z;
-        var turns = NormalizeRotation(request.RotationQuarterTurns);
-        return turns switch
-        {
-            1 => new Vec3f(z, y, 1f - x),
-            2 => new Vec3f(1f - x, y, 1f - z),
-            3 => new Vec3f(1f - z, y, x),
-            _ => new Vec3f(x, y, z)
-        };
-    }
-
-    private static int TransformFacingIndex(int facingIndex, WorldOperationRequest request)
-    {
-        if (facingIndex < 0 || facingIndex >= BlockFacing.ALLFACES.Length) return facingIndex;
-        var normal = BlockFacing.ALLFACES[facingIndex].Normali;
-        var x = normal.X;
-        var y = normal.Y;
-        var z = normal.Z;
-        if (request.MirrorAxis == 1) x = -x;
-        else if (request.MirrorAxis == 2) y = -y;
-        else if (request.MirrorAxis == 3) z = -z;
-        var turns = NormalizeRotation(request.RotationQuarterTurns);
-        var (rx, rz) = turns switch
-        {
-            1 => (z, -x),
-            2 => (-x, -z),
-            3 => (-z, x),
-            _ => (x, z)
-        };
-        return BlockFacing.FromVector(rx, y, rz).Index;
-    }
+    private static void TransformExactBeamTree(ITreeAttribute tree, WorldOperationRequest request) =>
+        BlueprintOrientation.TransformBeams(tree, request.RotationQuarterTurns, MirrorToAxis(request.MirrorAxis));
 
     private void RestoreBlockEntity(BlockSchematic schematic, BlockEntityPlacement placement, WorldOperationRequest request)
     {
@@ -502,8 +451,9 @@ public sealed class BuildwrightServerModSystem : ModSystem
         {
             var tree = schematic.DecodeBlockEntityData(placement.Payload);
             var axis = MirrorToAxis(request.MirrorAxis);
-            var angle = NormalizeRotation(request.RotationQuarterTurns) * 90;
-            if (angle != 0 || axis != null)
+            var angle = BlueprintOrientation.NativeDegrees(request.RotationQuarterTurns);
+            var transformedBeams = BlueprintOrientation.TransformBeams(tree, request.RotationQuarterTurns, axis);
+            if (!transformedBeams && (angle != 0 || axis != null))
             {
                 var temporary = sapi!.World.ClassRegistry.CreateBlockEntity(placement.Block.EntityClass);
                 temporary.Pos = placement.Position.Copy();
@@ -552,7 +502,7 @@ public sealed class BuildwrightServerModSystem : ModSystem
             var face = BlockFacing.ALLFACES[decorIndex % 6];
             var axis = MirrorToAxis(request.MirrorAxis);
             if (axis != null && face.Axis == axis) face = face.Opposite;
-            var angle = NormalizeRotation(request.RotationQuarterTurns) * 90;
+            var angle = BlueprintOrientation.NativeDegrees(request.RotationQuarterTurns);
             if (angle != 0 && face.IsHorizontal) face = face.GetHorizontalRotated(angle);
             accessor.SetDecor(block, new BlockPos(world.X, world.Y, world.Z, request.Dimension), subPosition * 6 + face.Index);
         }
@@ -564,15 +514,8 @@ public sealed class BuildwrightServerModSystem : ModSystem
         if (block == null) return null;
         try
         {
-            block = request.MirrorAxis switch
-            {
-                1 => sapi.World.GetBlock(block.GetHorizontallyFlippedBlockCode(EnumAxis.X)) ?? block,
-                2 => sapi.World.GetBlock(block.GetVerticallyFlippedBlockCode()) ?? block,
-                3 => sapi.World.GetBlock(block.GetHorizontallyFlippedBlockCode(EnumAxis.Z)) ?? block,
-                _ => block
-            };
-            var angle = NormalizeRotation(request.RotationQuarterTurns) * 90;
-            return angle == 0 ? block : sapi.World.GetBlock(block.GetRotatedBlockCode(angle)) ?? block;
+            return BlueprintOrientation.ResolveBlock(sapi.World, block, request.RotationQuarterTurns,
+                MirrorToAxis(request.MirrorAxis));
         }
         catch
         {

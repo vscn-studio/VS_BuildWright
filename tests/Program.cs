@@ -58,6 +58,7 @@ try
     var exportDirectory = Path.Combine(root, "Exports");
     BlueprintShapeSmoke.Run(Path.Combine(root, "Models"));
     SpecialBlockMeshSmoke.Run();
+    BlueprintRotationSmoke.Run();
     var nativeExport = BlueprintExporter.Export(exportDirectory, loaded, BlueprintFileKind.NativeJson);
     var duplicateExport = BlueprintExporter.Export(exportDirectory, loaded, BlueprintFileKind.NativeJson);
     Assert(Path.GetFileName(nativeExport) == "smoke.json" && Path.GetFileName(duplicateExport) == "smoke (2).json",

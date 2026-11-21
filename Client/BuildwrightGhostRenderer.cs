@@ -98,9 +98,6 @@ internal sealed class BuildwrightGhostRenderer : IRenderer
         if (player?.Entity == null) return;
         var cam = player.Entity.CameraPos;
         var rpi = capi.Render;
-        var mx = Mirror == MirrorAxis.X ? -1f : 1f;
-        var my = Mirror == MirrorAxis.Y ? -1f : 1f;
-        var mz = Mirror == MirrorAxis.Z ? -1f : 1f;
         if (mesh.HasMesh)
         {
             var dx = cam.X - Origin.X;
@@ -117,11 +114,9 @@ internal sealed class BuildwrightGhostRenderer : IRenderer
             var shader = rpi.PreparedStandardShader(Origin.X, Origin.Y, Origin.Z);
             shader.ViewMatrix = rpi.CameraMatrixOriginf;
             shader.ProjectionMatrix = rpi.CurrentProjectionMatrix;
-            shader.ModelMatrix = model.Identity()
-                .Translate(Origin.X - cam.X, Origin.Y - cam.Y, Origin.Z - cam.Z)
-                .Translate(0.5f, 0f, 0.5f).RotateY(RotationQuarterTurns * MathF.PI / 2f).Translate(-0.5f, 0f, -0.5f)
-                .Translate(0.5f, 0.5f, 0.5f).Scale(mx, my, mz).Translate(-0.5f, -0.5f, -0.5f)
-                .Translate(-anchorOffset.X, -anchorOffset.Y, -anchorOffset.Z).Values;
+            shader.ModelMatrix = ApplyProjectionTransform(model.Identity()
+                .Translate(Origin.X - cam.X, Origin.Y - cam.Y, Origin.Z - cam.Z),
+                anchorOffset, RotationQuarterTurns, Mirror).Values;
             try
             {
                 for (var layer = 0; layer < visibleLayers; layer++)
@@ -168,11 +163,9 @@ internal sealed class BuildwrightGhostRenderer : IRenderer
                     RotationQuarterTurns, Mirror, visibleLayers, cursorHit, placementGridSize);
             }
             var shader = rpi.GetEngineShader(EnumShaderProgram.Wireframe);
-            guideModelView.Identity().Set(rpi.CameraMatrixOriginf)
-                .Translate(Origin.X - cam.X, Origin.Y - cam.Y, Origin.Z - cam.Z)
-                .Translate(0.5f, 0f, 0.5f).RotateY(RotationQuarterTurns * MathF.PI / 2f).Translate(-0.5f, 0f, -0.5f)
-                .Translate(0.5f, 0.5f, 0.5f).Scale(mx, my, mz).Translate(-0.5f, -0.5f, -0.5f)
-                .Translate(-anchorOffset.X, -anchorOffset.Y, -anchorOffset.Z);
+            ApplyProjectionTransform(guideModelView.Identity().Set(rpi.CameraMatrixOriginf)
+                .Translate(Origin.X - cam.X, Origin.Y - cam.Y, Origin.Z - cam.Z),
+                anchorOffset, RotationQuarterTurns, Mirror);
             shader.Use();
             rpi.GLEnableDepthTest();
             rpi.GLDepthMask(false);
@@ -214,6 +207,13 @@ internal sealed class BuildwrightGhostRenderer : IRenderer
 
     private bool IsHoldingSupportBeam() =>
         capi.World.Player?.InventoryManager.ActiveHotbarSlot?.Itemstack?.Collectible is BlockSupportBeam;
+
+    internal static Matrixf ApplyProjectionTransform(Matrixf matrix, Int3 anchorOffset, int rotation, MirrorAxis mirror) =>
+        matrix.Translate(0.5f, 0f, 0.5f).RotateY(rotation * MathF.PI / 2f).Translate(-0.5f, 0f, -0.5f)
+            .Translate(0.5f, 0.5f, 0.5f)
+            .Scale(mirror == MirrorAxis.X ? -1f : 1f, mirror == MirrorAxis.Y ? -1f : 1f, mirror == MirrorAxis.Z ? -1f : 1f)
+            .Translate(-0.5f, -0.5f, -0.5f)
+            .Translate(-anchorOffset.X, -anchorOffset.Y, -anchorOffset.Z);
 
     private void UpdateFloatingPlacement()
     {

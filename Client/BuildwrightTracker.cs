@@ -1,5 +1,6 @@
 using Buildwright.Core;
 using Buildwright.Api;
+using Buildwright.Protocol;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;
@@ -377,10 +378,7 @@ internal sealed class BuildwrightTracker : IDisposable
         if (block == null) return code.ToString();
         try
         {
-            if (mirror == MirrorAxis.Y) block = capi.World.GetBlock(block.GetVerticallyFlippedBlockCode()) ?? block;
-            if (mirror == MirrorAxis.X) block = capi.World.GetBlock(block.GetHorizontallyFlippedBlockCode(EnumAxis.X)) ?? block;
-            if (mirror == MirrorAxis.Z) block = capi.World.GetBlock(block.GetHorizontallyFlippedBlockCode(EnumAxis.Z)) ?? block;
-            if (rotation != 0) block = capi.World.GetBlock(block.GetRotatedBlockCode(((rotation % 4) + 4) % 4 * 90)) ?? block;
+            block = BlueprintOrientation.ResolveBlock(capi.World, block, rotation, SupportBeamDataComparer.MirrorToAxis(mirror));
             return block.Code?.ToString() ?? code.ToString();
         }
         catch

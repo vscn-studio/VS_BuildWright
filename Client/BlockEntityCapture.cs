@@ -2,6 +2,7 @@ using System.Reflection;
 using System.IO;
 using Buildwright.Core;
 using Buildwright.Api;
+using Buildwright.Protocol;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Datastructures;
@@ -102,9 +103,46 @@ internal static class BlockEntityCapture
         {
             var data = Ascii85.Decode(ascii85);
             var tree = new TreeAttribute();
-            using var stream = new MemoryStream(data);
-            using var reader = new BinaryReader(stream);
-            tree.FromBytes(reader);
+            // 1.23 marks the BinaryReader overload obsolete (and promotes it
+            // to an error), while older game APIs only expose this overload.
+            // Resolve it by reflection so the same source can target both API
+            // generations without binding to the obsolete member at compile time.
+            var fromBytes = typeof(TreeAttribute).GetMethod(
+                "FromBytes", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                binder: null, new[] { typeof(BinaryReader) }, modifiers: null);
+            if (fromBytes != null)
+            {
+                try
+                {
+                    using var stream = new MemoryStream(data);
+                    using var reader = new BinaryReader(stream);
+                    fromBytes.Invoke(tree, new object[] { reader });
+                }
+                catch (TargetInvocationException) when (typeof(TreeAttribute).GetMethod(
+                    "FromBytes", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                    binder: null, new[] { typeof(byte[]) }, modifiers: null) != null)
+                {
+                    // 1.23 keeps the legacy overload but may reject payloads
+                    // written with its newer binary serializer. Retry using
+                    // the byte[] entry point when available.
+                    tree = new TreeAttribute();
+                    typeof(TreeAttribute).GetMethod(
+                        "FromBytes", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                        binder: null, new[] { typeof(byte[]) }, modifiers: null)!
+                        .Invoke(tree, new object[] { data });
+                }
+            }
+            else
+            {
+                // Newer APIs also expose a byte[] overload. It avoids the
+                // BinarySpanReader ref-struct signature, which cannot be
+                // passed through reflection.
+                var byteArrayFromBytes = typeof(TreeAttribute).GetMethod(
+                    "FromBytes", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                    binder: null, new[] { typeof(byte[]) }, modifiers: null);
+                if (byteArrayFromBytes == null) return null;
+                byteArrayFromBytes.Invoke(tree, new object[] { data });
+            }
             return tree;
         }
         catch { return null; }
@@ -128,25 +166,15 @@ internal static class BlockEntityCapture
             var entity = capi.World.ClassRegistry.CreateBlockEntity(block.EntityClass);
             var tree = Decode(payload);
             if (tree == null) return payload;
-            var transformedBlock = block;
-            if (mirror == MirrorAxis.Y) transformedBlock = capi.World.GetBlock(transformedBlock.GetVerticallyFlippedBlockCode()) ?? transformedBlock;
-            if (mirror == MirrorAxis.X) transformedBlock = capi.World.GetBlock(transformedBlock.GetHorizontallyFlippedBlockCode(EnumAxis.X)) ?? transformedBlock;
-            if (mirror == MirrorAxis.Z) transformedBlock = capi.World.GetBlock(transformedBlock.GetHorizontallyFlippedBlockCode(EnumAxis.Z)) ?? transformedBlock;
-            if (rotation != 0) transformedBlock = capi.World.GetBlock(transformedBlock.GetRotatedBlockCode(((rotation % 4) + 4) % 4 * 90)) ?? transformedBlock;
+            var axis = SupportBeamDataComparer.MirrorToAxis(mirror);
+            var transformedBlock = BlueprintOrientation.ResolveBlock(capi.World, block, rotation, axis);
             var transformedSupportBeams = SupportBeamDataComparer.TransformInPlace(tree, rotation, mirror);
             if (!transformedSupportBeams)
             {
                 if (entity is not IRotatable rotatable) return payload;
                 entity.Pos = new BlockPos(0, 1, 0);
                 entity.CreateBehaviors(transformedBlock, capi.World);
-                var axis = mirror switch
-                {
-                    MirrorAxis.X => EnumAxis.X,
-                    MirrorAxis.Y => EnumAxis.Y,
-                    MirrorAxis.Z => EnumAxis.Z,
-                    _ => (EnumAxis?)null
-                };
-                rotatable.OnTransformed(capi.World, tree, ((rotation % 4) + 4) % 4 * 90,
+                rotatable.OnTransformed(capi.World, tree, BlueprintOrientation.NativeDegrees(rotation),
                     schematic.BlockCodes, schematic.ItemCodes ?? new Dictionary<int, AssetLocation>(), axis);
             }
             tree.SetString("blockCode", transformedBlock.Code.ToShortString());
@@ -185,6 +213,7 @@ internal static class BlockEntityCapture
             typeof(BlockEntity).GetProperty("Block", BindingFlags.Instance | BindingFlags.Public)?.SetValue(entity, block);
             entity.CreateBehaviors(block, capi.World);
 
+            PrepareRoofPreviewTree(block, tree);
             InvokeFromTree(entity, tree, capi.World);
             // Microblock entity trees retain numeric material IDs. Resolve them
             // through the blueprint's Block Code table before mesh generation.
@@ -208,6 +237,21 @@ internal static class BlockEntityCapture
             capi.Logger.Debug("[buildwright] special mesh failed for {0}: {1}", block.Code, ex.Message);
             return null;
         }
+    }
+
+    /// <summary>
+    /// A preview must retain the saved slope, corner and ridge directions.
+    /// Roofing's load migration otherwise recalculates them from live-world
+    /// neighbors at the saved position, which is not the blueprint's world.
+    /// Only change the decoded preview tree, never the stored blueprint payload.
+    /// </summary>
+    private static void PrepareRoofPreviewTree(Block block, ITreeAttribute tree)
+    {
+        if (!string.Equals(block.Code?.Domain, "vsroofing", StringComparison.OrdinalIgnoreCase)) return;
+        // Both legacy entities and 2.x RoofData skip version migration for -1.
+        tree.SetInt("BuildNumber", -1);
+        // 2.x also migrates ridge geometry independently of the build number.
+        tree.SetBool("RidgeShapeResolved", true);
     }
 
     /// <summary>

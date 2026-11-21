@@ -1,5 +1,6 @@
 using Buildwright.Core;
 using Buildwright.Api;
+using Buildwright.Protocol;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Vintagestory.API.Client;
@@ -83,7 +84,7 @@ public sealed class BuildwrightModSystem : ModSystem
         selectionRenderer = new BuildwrightSelectionRenderer(api);
         if (ShouldShowControlHud()) controlHud.TryOpen();
         controlHudTickListener = api.Event.RegisterGameTickListener(OnControlHudTick, 100);
-        api.Logger.Notification("[buildwright] Buildwright 1.0.4-pre.1 ready (client)");
+        api.Logger.Notification("[buildwright] Buildwright 1.0.4 ready (client)");
     }
 
     private void OnControlHudTick(float dt)
@@ -1413,6 +1414,17 @@ public sealed class BuildwrightModSystem : ModSystem
             if (displayMode is GhostDisplayMode.Full or GhostDisplayMode.Layer || activeRenderer == null || activeRenderer.IsFloating) return true;
             if (activeSchematic == null || capi == null) return true;
             if (!expectedByLocal.TryGetValue((x, y, z), out var expected) || expected == null) return false;
+            var expectedBlock = capi.World.GetBlock(new AssetLocation(expected));
+            if (expectedBlock != null)
+            {
+                try
+                {
+                    expected = BlueprintOrientation.ResolveBlock(capi.World, expectedBlock,
+                        activeRenderer.RotationQuarterTurns, SupportBeamDataComparer.MirrorToAxis(activeRenderer.Mirror))
+                        .Code?.ToString() ?? expected;
+                }
+                catch { /* Unavailable mod variants retain their captured code. */ }
+            }
             var world = BlueprintTransforms.CellToWorld(new Int3(x, y, z), activeAnchorOffset,
                 new Int3(activeRenderer.Origin.X, activeRenderer.Origin.Y, activeRenderer.Origin.Z),
                 activeRenderer.RotationQuarterTurns, activeRenderer.Mirror);

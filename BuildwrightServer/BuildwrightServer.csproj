@@ -7,7 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <AssemblyName>BuildwrightServer</AssemblyName>
-    <ModVersion>1.0.4-pre.1</ModVersion>
+    <ModVersion>1.0.4</ModVersion>
     <Version>$(ModVersion)</Version>
     <PackagePath>..\artifacts\buildwrightserver-$(ModVersion).zip</PackagePath>
     <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
@@ -19,6 +19,7 @@
     <Reference Include="VSSurvivalMod" HintPath="$(VintageStoryPath)\Mods\VSSurvivalMod.dll" Private="false" />
     <Reference Include="protobuf-net" HintPath="$(VintageStoryPath)\Lib\protobuf-net.dll" Private="false" />
     <Compile Include="..\Shared\WorldOperationProtocol.cs" Link="Shared\WorldOperationProtocol.cs" />
+    <Compile Include="..\Shared\BlueprintOrientation.cs" Link="Shared\BlueprintOrientation.cs" />
     <None Include="modinfo.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="COPYRIGHT.md" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\LICENSE" Link="LICENSE" CopyToOutputDirectory="PreserveNewest" />

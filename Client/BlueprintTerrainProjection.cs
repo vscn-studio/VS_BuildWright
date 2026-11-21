@@ -37,6 +37,14 @@ internal sealed class BlueprintTerrainProjection : IDisposable
     private static readonly FieldInfo? Vars = typeof(ChunkTesselator).GetField("vars", InstanceFields);
     private static readonly FieldInfo? CenterPools = typeof(ChunkTesselator).GetField("centerModeldataByRenderPassByLodLevel", InstanceFields);
     private static readonly FieldInfo? EdgePools = typeof(ChunkTesselator).GetField("edgeModeldataByRenderPassByLodLevel", InstanceFields);
+    // LodLevel was a public field in older game builds. 1.23 moved it to a
+    // property backed by the pool's culling data. Keep this access late-bound
+    // so the same mod binary can run against either API shape; a direct
+    // assignment would emit ldfld/stfld and fail during JIT on 1.23.
+    private static readonly PropertyInfo? LodLevelProperty =
+        typeof(ModelDataPoolLocation).GetProperty("LodLevel", InstanceFields);
+    private static readonly FieldInfo? LodLevelField =
+        typeof(ModelDataPoolLocation).GetField("LodLevel", InstanceFields);
     private static readonly MethodInfo? SetDimension = typeof(TCTCache).GetMethod("SetDimension", InstanceFields);
 
     private readonly ICoreClientAPI capi;
@@ -289,8 +297,20 @@ internal sealed class BlueprintTerrainProjection : IDisposable
     {
         if (CoreGame == null || MainChunkRenderer == null || BlocksExt == null || FluidBlocksExt == null
             || LightExt == null || DrawSolid == null || DrawFluid == null || ClimateMap == null
-            || RegionSize == null || Vars == null || CenterPools == null || EdgePools == null || SetDimension == null)
+            || RegionSize == null || Vars == null || CenterPools == null || EdgePools == null || SetDimension == null
+            || (LodLevelProperty == null && LodLevelField == null))
             throw new MissingMemberException("Vintage Story chunk tesselator fields are unavailable.");
+    }
+
+    private static void SetLodLevel(ModelDataPoolLocation location, int lod)
+    {
+        if (LodLevelProperty != null && LodLevelProperty.CanWrite)
+        {
+            LodLevelProperty.SetValue(location, lod);
+            return;
+        }
+
+        LodLevelField?.SetValue(location, lod);
     }
 
     public void Update(BlockPos origin, Int3 anchorOffset, int rotation, MirrorAxis mirror, int visibleLayers)
@@ -315,7 +335,7 @@ internal sealed class BlueprintTerrainProjection : IDisposable
                     .AddModel(mesh, modelOrigin, origin.dimension, sphere);
                 if (location != null)
                 {
-                    location.LodLevel = part.Lod;
+                    SetLodLevel(location, part.Lod);
                     locations.Add(location);
                 }
             }

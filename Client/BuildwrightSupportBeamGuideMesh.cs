@@ -160,13 +160,7 @@ internal sealed class BuildwrightSupportBeamGuideMesh : IDisposable
 
     private static Matrixf CreateInverseTransform(Int3 anchorOffset, int rotation, MirrorAxis mirror)
     {
-        var mx = mirror == MirrorAxis.X ? -1f : 1f;
-        var my = mirror == MirrorAxis.Y ? -1f : 1f;
-        var mz = mirror == MirrorAxis.Z ? -1f : 1f;
-        return new Matrixf().Identity()
-            .Translate(0.5f, 0f, 0.5f).RotateY(rotation * MathF.PI / 2f).Translate(-0.5f, 0f, -0.5f)
-            .Translate(0.5f, 0.5f, 0.5f).Scale(mx, my, mz).Translate(-0.5f, -0.5f, -0.5f)
-            .Translate(-anchorOffset.X, -anchorOffset.Y, -anchorOffset.Z).Invert();
+        return BuildwrightGhostRenderer.ApplyProjectionTransform(new Matrixf(), anchorOffset, rotation, mirror).Invert();
     }
 
     private static Vec3f WorldToBlueprint(Matrixf inverse, BlockPos origin, Vec3d point) =>

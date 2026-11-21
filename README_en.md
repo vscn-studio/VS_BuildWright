@@ -1,8 +1,8 @@
 # Buildwright
 
-Buildwright is a blueprint, projection, and build-progress mod for Vintage Story 1.22.3. The client manages blueprints, projections, and model exports; the companion server component performs world operations that require server authority.
+Buildwright is a blueprint, projection, and build-progress mod for Vintage Story 1.22–1.23-pre.1. The client manages blueprints, projections, and model exports; the companion server component performs world operations that require server authority.
 
-Current open-source version: `1.0.4-pre.1`
+Current open-source version: `1.0.4`
 
 ## Features
 
@@ -19,16 +19,16 @@ Current open-source version: `1.0.4-pre.1`
 
 ## Installation
 
-The client requires VSImGui `1.2.7` as a separate mod. A Release build produces:
+Vintage Story 1.22–1.23-pre.1 uses VSImGui `1.2.7`. A Release build produces packages shared by both game versions:
 
-- `artifacts/buildwright-1.0.4-pre.1.zip` for the client `Mods` directory.
-- `artifacts/buildwrightserver-1.0.4-pre.1.zip` for the server `Mods` directory. The server package is also required in single-player.
+- `artifacts/buildwright-1.0.4.zip` for the client `Mods` directory.
+- `artifacts/buildwrightserver-1.0.4.zip` for the server `Mods` directory. The server package is also required in single-player.
 
 Do not extract both ZIPs into one directory, and remove older packages with the same mod id before installing an update.
 
 ## Building
 
-You need the .NET 10 SDK, a Vintage Story 1.22.3 installation, and the VSImGui 1.2.7 directory. Adjust the paths below for your machine:
+You need a .NET SDK, the target Vintage Story installation, and a matching VSImGui directory. Adjust the paths below for your machine:
 
 ```powershell
 $env:VINTAGE_STORY = 'D:\Vintagestory'
@@ -44,7 +44,7 @@ dotnet build -c Release --no-restore `
 dotnet build BuildwrightServer/BuildwrightServer.csproj -c Release --no-restore `
   -p:VINTAGE_STORY=$env:VINTAGE_STORY
 
-pwsh -NoProfile -File tests/ReleasePackageSmoke.ps1 -Version 1.0.4-pre.1
+pwsh -NoProfile -File tests/ReleasePackageSmoke.ps1 -Version 1.0.4
 ```
 
 The Blockbench plugin compatibility check uses a local Vintage Story Blockbench plugin:

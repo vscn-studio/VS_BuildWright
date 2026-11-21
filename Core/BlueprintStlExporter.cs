@@ -101,7 +101,7 @@ public static class BlueprintStlExporter
         using var output = new MemoryStream();
         using var writer = new BinaryWriter(output, Encoding.ASCII, true);
         var header = new byte[80];
-        Encoding.ASCII.GetBytes("Buildwright 1.0.4-pre.1 | units=mm | Z-up | solid voxel union").CopyTo(header, 0);
+        Encoding.ASCII.GetBytes("Buildwright 1.0.4 | units=mm | Z-up | solid voxel union").CopyTo(header, 0);
         writer.Write(header); writer.Write(0u);
         uint count = 0;
         var scale = longestEdgeMm / longest;

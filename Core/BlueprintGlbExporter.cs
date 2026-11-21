@@ -115,7 +115,7 @@ public static class BlueprintGlbExporter
             ["asset"] = new JObject
             {
                 ["version"] = "2.0",
-                ["generator"] = "Buildwright 1.0.4-pre.1",
+                ["generator"] = "Buildwright 1.0.4",
                 ["copyright"] = "Geometry and textures retain their respective owners' rights. Export grants no additional rights to third-party assets; obtain permissions and retain required credits before redistribution or commercial use."
             },
             ["scene"] = 0, ["scenes"] = new JArray(new JObject { ["nodes"] = new JArray(0) }),

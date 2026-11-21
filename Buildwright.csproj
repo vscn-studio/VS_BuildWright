@@ -10,7 +10,7 @@
     <LangVersion>latest</LangVersion>
     <RootNamespace>Buildwright</RootNamespace>
     <AssemblyName>Buildwright</AssemblyName>
-    <ModVersion>1.0.4-pre.1</ModVersion>
+    <ModVersion>1.0.4</ModVersion>
     <Version>$(ModVersion)</Version>
     <PackagePath>artifacts\buildwright-$(ModVersion).zip</PackagePath>
     <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>

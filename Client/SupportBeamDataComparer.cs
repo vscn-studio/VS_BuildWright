@@ -1,4 +1,5 @@
 using Buildwright.Core;
+using Buildwright.Protocol;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Datastructures;
@@ -58,57 +59,22 @@ internal static class SupportBeamDataComparer
         }
     }
 
-    public static bool TransformInPlace(ITreeAttribute tree, int rotation, MirrorAxis mirror)
-    {
-        var bytes = tree.GetBytes("beams");
-        if (bytes == null) return false;
-        var beams = SerializerUtil.Deserialize<PlacedBeam[]>(bytes) ?? Array.Empty<PlacedBeam>();
-        foreach (var beam in beams)
-        {
-            if (beam?.Start == null || beam.End == null) continue;
-            beam.Start = TransformPoint(beam.Start, rotation, mirror);
-            beam.End = TransformPoint(beam.End, rotation, mirror);
-            beam.FacingIndex = TransformFacingIndex(beam.FacingIndex, rotation, mirror);
-        }
-        tree.SetBytes("beams", SerializerUtil.Serialize(beams));
-        return true;
-    }
+    public static bool TransformInPlace(ITreeAttribute tree, int rotation, MirrorAxis mirror) =>
+        BlueprintOrientation.TransformBeams(tree, rotation, MirrorToAxis(mirror));
 
-    internal static Vec3f TransformPoint(Vec3f point, int rotation, MirrorAxis mirror)
-    {
-        var turns = ((rotation % 4) + 4) % 4;
-        var x = mirror == MirrorAxis.X ? 1f - point.X : point.X;
-        var y = mirror == MirrorAxis.Y ? 1f - point.Y : point.Y;
-        var z = mirror == MirrorAxis.Z ? 1f - point.Z : point.Z;
-        return turns switch
-        {
-            1 => new Vec3f(z, y, 1f - x),
-            2 => new Vec3f(1f - x, y, 1f - z),
-            3 => new Vec3f(1f - z, y, x),
-            _ => new Vec3f(x, y, z)
-        };
-    }
+    internal static Vec3f TransformPoint(Vec3f point, int rotation, MirrorAxis mirror) =>
+        BlueprintOrientation.TransformPoint(point, rotation, MirrorToAxis(mirror));
 
-    internal static int TransformFacingIndex(int facingIndex, int rotation, MirrorAxis mirror)
+    internal static int TransformFacingIndex(int facingIndex, int rotation, MirrorAxis mirror) =>
+        BlueprintOrientation.TransformFacing(facingIndex, rotation, MirrorToAxis(mirror));
+
+    internal static EnumAxis? MirrorToAxis(MirrorAxis mirror) => mirror switch
     {
-        if (facingIndex < 0 || facingIndex >= BlockFacing.ALLFACES.Length) return facingIndex;
-        var normal = BlockFacing.ALLFACES[facingIndex].Normali;
-        var x = normal.X;
-        var y = normal.Y;
-        var z = normal.Z;
-        if (mirror == MirrorAxis.X) x = -x;
-        else if (mirror == MirrorAxis.Y) y = -y;
-        else if (mirror == MirrorAxis.Z) z = -z;
-        var turns = ((rotation % 4) + 4) % 4;
-        var (rx, rz) = turns switch
-        {
-            1 => (z, -x),
-            2 => (-x, -z),
-            3 => (-z, x),
-            _ => (x, z)
-        };
-        return BlockFacing.FromVector(rx, y, rz).Index;
-    }
+        MirrorAxis.X => EnumAxis.X,
+        MirrorAxis.Y => EnumAxis.Y,
+        MirrorAxis.Z => EnumAxis.Z,
+        _ => null
+    };
 
     private static bool BeamEquals(PlacedBeam expected, PlacedBeam actual,
         System.Func<int, string?> expectedCode, System.Func<int, string?> actualCode)

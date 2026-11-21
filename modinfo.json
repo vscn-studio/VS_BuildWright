@@ -6,12 +6,12 @@
     "VSCN-Studio"
   ],
   "description": "Client-side blueprints, ghost projections and build progress tools.",
-  "version": "1.0.4-pre.1",
+  "version": "1.0.4",
   "side": "Client",
   "requiredOnClient": true,
   "requiredOnServer": false,
   "dependencies": {
-    "game": "1.22.3",
+    "game": "1.22.0",
     "vsimgui": "1.2.7"
   }
 }

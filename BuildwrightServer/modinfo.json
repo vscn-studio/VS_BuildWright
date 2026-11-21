@@ -6,11 +6,11 @@
     "VSCN-Studio"
   ],
   "description": "Authoritative server-side world operations for Buildwright.",
-  "version": "1.0.4-pre.1",
+  "version": "1.0.4",
   "side": "Server",
   "requiredOnClient": false,
   "requiredOnServer": true,
   "dependencies": {
-    "game": "1.22.3"
+    "game": "1.22.0"
   }
 }

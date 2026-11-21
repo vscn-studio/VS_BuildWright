@@ -118,6 +118,7 @@ internal static class SpecialBlockMeshSmoke
 
     private static void Roofing()
     {
+        RoofPreviewInitialization();
         var tesselator = Proxy<ITesselatorAPI>((_, _) => throw new InvalidOperationException("Unexpected tessellator use"));
         var capi = Proxy<ICoreClientAPI>((method, _) => method.Name == "get_Tesselator" ? tesselator : throw new NotSupportedException(method.Name));
         var block = new Block { Code = new AssetLocation("vsroofing:autoroof-north") };
@@ -148,6 +149,7 @@ internal static class SpecialBlockMeshSmoke
         if (!string.IsNullOrWhiteSpace(modPath))
         {
             var assembly = Assembly.LoadFrom(modPath);
+            RoofMigrationContract(assembly);
             foreach (var name in new[] { "AutoRoofEntity", "AutoRoofEntityChiseled" })
             {
                 var dataType = assembly.GetType("VSRoofing." + name)!.GetProperty("RoofData")!.PropertyType;
@@ -156,6 +158,95 @@ internal static class SpecialBlockMeshSmoke
                         $"{name}.RoofData.{method} must match the actual VS Roofing assembly");
             }
             Console.WriteLine("VS Roofing assembly contract passed: " + modPath);
+        }
+    }
+
+    private static void RoofPreviewInitialization()
+    {
+        foreach (var face in BlockFacing.HORIZONTALS)
+        foreach (var ridge in new[] { false, true })
+        {
+            var block = new Block { Code = new AssetLocation("vsroofing:roof-bare-" + face.Code), EntityClass = "preview-roof" };
+            block.VariantStrict["side"] = face.Code;
+            var tree = new TreeAttribute();
+            tree.SetString("direction", face.Code);
+            tree.SetInt("BuildNumber", 0);
+            tree.SetInt("Type", ridge ? 2 : 0);
+            tree.SetBool("RidgeShapeResolved", false);
+            var payload = (string)Capture.GetMethod("EncodeTree")!.Invoke(null, [tree])!;
+            var registry = Proxy<IClassRegistryAPI>((method, _) => method.Name == "CreateBlockEntity"
+                ? new MigratingRoof() : throw new NotSupportedException(method.Name));
+            var world = Proxy<IClientWorldAccessor>((method, _) => method.Name switch
+            {
+                "get_ClassRegistry" => registry,
+                "get_Side" => EnumAppSide.Client,
+                _ => throw new NotSupportedException(method.Name)
+            });
+            var logger = Proxy<ILogger>((_, _) => null);
+            var tesselator = Proxy<ITesselatorAPI>((_, _) => throw new InvalidOperationException("Unexpected tessellator use"));
+            var capi = Proxy<ICoreClientAPI>((method, _) => method.Name switch
+            {
+                "get_World" => world,
+                "get_Logger" => logger,
+                "get_Tesselator" => tesselator,
+                _ => throw new NotSupportedException(method.Name)
+            });
+            var actual = (MeshData?)Capture.GetMethod("TryBuildMesh")!.Invoke(null,
+                [capi, new BlockSchematic(), block, payload, null, null]);
+            Check(actual != null, "Roof preview must survive entity initialization");
+            var expected = CubeMeshUtil.GetCubeFace(face);
+            SameVertices(actual!, expected, $"{face.Code}/{ridge}: initialization must preserve saved roof orientation");
+            Check(payload == (string)Capture.GetMethod("EncodeTree")!.Invoke(null, [tree])!,
+                "Roof preview must not rewrite the stored blueprint");
+            actual!.Dispose();
+            expected.Dispose();
+        }
+        var other = new TreeAttribute();
+        other.SetInt("BuildNumber", 7);
+        Capture.GetMethod("PrepareRoofPreviewTree", BindingFlags.NonPublic | BindingFlags.Static)!
+            .Invoke(null, [new Block { Code = new AssetLocation("game:stone") }, other]);
+        Check(other.GetInt("BuildNumber") == 7 && !other.HasAttribute("RidgeShapeResolved"),
+            "Roof migration suppression must not affect other mods");
+    }
+
+    private static void RoofMigrationContract(Assembly assembly)
+    {
+        var dataType = assembly.GetType("VSRoofing.AutoRoofData")!;
+        var configField = assembly.GetType("VSRoofing.VSRoofingModSystem")!.GetField("Config")!;
+        configField.SetValue(null, Activator.CreateInstance(configField.FieldType));
+        var callbacks = 0;
+        var events = Proxy<IClientEventAPI>((method, _) => method.Name == "RegisterCallback"
+            ? (long)++callbacks : throw new NotSupportedException(method.Name));
+        var api = Proxy<ICoreClientAPI>((method, _) => method.Name == "get_Event"
+            ? events : throw new NotSupportedException(method.Name));
+        foreach (var ridge in new[] { false, true })
+        {
+            var owner = new ModernRoof { Api = api, Pos = new BlockPos(0, 1, 0) };
+            var block = new Block { Code = new AssetLocation("vsroofing:roof-bare-east") };
+            block.VariantStrict["side"] = "east";
+            owner.Block = block;
+            var data = Activator.CreateInstance(dataType)!;
+            dataType.GetField("Owner")!.SetValue(data, owner);
+            var ridgeRoofInfo = dataType.GetField("RidgeRoofInfo")!;
+            ridgeRoofInfo.SetValue(data, Array.CreateInstance(ridgeRoofInfo.FieldType.GetElementType()!, 4));
+            var roofType = dataType.GetProperty("RoofType")!;
+            roofType.SetValue(data, Enum.ToObject(roofType.PropertyType, ridge ? 2 : 0));
+            var build = dataType.GetField("BuildNumber", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            var resolved = dataType.GetField("RidgeShapeResolved", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            build.SetValue(data, 0);
+            resolved.SetValue(data, false);
+            var initialize = dataType.GetMethod("Initialize")!;
+            var before = callbacks;
+            initialize.Invoke(data, null);
+            Check(callbacks == before + 1, "Unprepared VS Roofing data must request world-dependent migration");
+            var tree = new TreeAttribute();
+            Capture.GetMethod("PrepareRoofPreviewTree", BindingFlags.NonPublic | BindingFlags.Static)!
+                .Invoke(null, [block, tree]);
+            build.SetValue(data, tree.GetInt("BuildNumber"));
+            resolved.SetValue(data, tree.GetBool("RidgeShapeResolved"));
+            before = callbacks;
+            initialize.Invoke(data, null);
+            Check(callbacks == before, "Preview initialization must not schedule VS Roofing world migration");
         }
     }
 
@@ -265,6 +356,27 @@ internal static class SpecialBlockMeshSmoke
         private MeshData GenerateRoofMesh(ITesselatorAPI _) => roof;
         private MeshData GenerateFenceConnectMesh(ITesselatorAPI _) => CubeMeshUtil.GetCubeFace(BlockFacing.NORTH);
         private MeshData GeneratePlantMesh(ITesselatorAPI _) => CubeMeshUtil.GetCubeFace(BlockFacing.EAST);
+    }
+
+    private sealed class MigratingRoof : BlockEntity
+    {
+        private string direction = "north";
+        private bool migrate;
+        public override void FromTreeAttributes(ITreeAttribute tree, IWorldAccessor world)
+        {
+            base.FromTreeAttributes(tree, world);
+            direction = tree.GetString("direction");
+            var build = tree.GetInt("BuildNumber");
+            migrate = (build >= 0 && build != 1)
+                || (tree.GetInt("Type") == 2 && !tree.GetBool("RidgeShapeResolved"));
+        }
+        public override void Initialize(ICoreAPI api)
+        {
+            Api = api;
+            // Legacy roofs recalculate immediately against unrelated neighbors.
+            if (migrate) direction = BlockFacing.FromCode(direction).Opposite.Code;
+        }
+        public MeshData GenerateRoofMesh(ITesselatorAPI _) => CubeMeshUtil.GetCubeFace(BlockFacing.FromCode(direction));
     }
 
     private sealed class CachedContainer : BlockEntityGenericTypedContainer

@@ -1,8 +1,8 @@
 # Buildwright
 
-Buildwright 是面向 Vintage Story 1.22.3 的蓝图、投影和建造进度模组。客户端提供蓝图管理、投影和模型导出，服务端组件负责需要服务器权限的世界操作。
+Buildwright 是面向 Vintage Story 1.22–1.23-pre.1 的蓝图、投影和建造进度模组。客户端提供蓝图管理、投影和模型导出，服务端组件负责需要服务器权限的世界操作。
 
-当前开源版本：`1.0.4-pre.1`
+当前开源版本：`1.0.4`
 
 ## 功能
 
@@ -19,16 +19,16 @@ Buildwright 是面向 Vintage Story 1.22.3 的蓝图、投影和建造进度模�
 
 ## 安装
 
-客户端需要单独安装 VSImGui `1.2.7`。Release 构建会生成：
+1.22–1.23-pre.1 使用 VSImGui `1.2.7`。Release 构建会生成可用于这两个游戏版本的共用包：
 
-- `artifacts/buildwright-1.0.4-pre.1.zip`：放入客户端 `Mods` 目录。
-- `artifacts/buildwrightserver-1.0.4-pre.1.zip`：放入服务器 `Mods` 目录；单人游戏也需要服务端组件。
+- `artifacts/buildwright-1.0.4.zip`：放入客户端 `Mods` 目录。
+- `artifacts/buildwrightserver-1.0.4.zip`：放入服务器 `Mods` 目录；单人游戏也需要服务端组件。
 
 不要把两个 ZIP 解压到同一个目录，也不要同时保留同一 modid 的旧包。
 
 ## 构建
 
-需要 .NET 10 SDK、Vintage Story 1.22.3 客户端安装目录，以及 VSImGui 1.2.7 源目录。以下命令中的路径可以按本机安装位置调整：
+需要 .NET SDK、目标 Vintage Story 客户端安装目录，以及匹配版本的 VSImGui 源目录。以下命令中的路径可以按本机安装位置调整：
 
 ```powershell
 $env:VINTAGE_STORY = 'D:\Vintagestory'
@@ -44,7 +44,7 @@ dotnet build -c Release --no-restore `
 dotnet build BuildwrightServer/BuildwrightServer.csproj -c Release --no-restore `
   -p:VINTAGE_STORY=$env:VINTAGE_STORY
 
-pwsh -NoProfile -File tests/ReleasePackageSmoke.ps1 -Version 1.0.4-pre.1
+pwsh -NoProfile -File tests/ReleasePackageSmoke.ps1 -Version 1.0.4
 ```
 
 Blockbench 插件兼容性检查需要本地 Vintage Story Blockbench 插件：
